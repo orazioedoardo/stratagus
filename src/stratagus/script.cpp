@@ -46,6 +46,8 @@
 #include "ui.h"
 #include "unit.h"
 
+#include <SDL.h>
+
 #include <optional>
 #include <set>
 #include <signal.h>
@@ -285,6 +287,29 @@ static int CclSavePreferences(lua_State *l)
 	LuaCheckArgs(l, 0);
 	SavePreferences();
 	return 0;
+}
+
+/**
+**  The user's preferred languages (on the web, the browser's), most preferred first, as language codes: "en", "it"...
+**  Empty when they aren't known.
+**
+**  @param l  Lua state.
+*/
+static int CclGetPreferredLanguages(lua_State *l)
+{
+	LuaCheckArgs(l, 0);
+	lua_newtable(l);
+#if SDL_VERSION_ATLEAST(2, 0, 14)
+	if (SDL_Locale *locales = SDL_GetPreferredLocales()) {
+		int i = 0;
+		for (const SDL_Locale *locale = locales; locale->language; ++locale) {
+			lua_pushstring(l, locale->language);
+			lua_rawseti(l, -2, ++i);
+		}
+		SDL_free(locales);
+	}
+#endif
+	return 1;
 }
 
 /**
@@ -2689,6 +2714,7 @@ void ScriptRegister()
 	lua_register(Lua, "SetDamageFormula", CclSetDamageFormula);
 
 	lua_register(Lua, "SavePreferences", CclSavePreferences);
+	lua_register(Lua, "GetPreferredLanguages", CclGetPreferredLanguages);
 	lua_register(Lua, "Load", CclLoad);
 	lua_register(Lua, "LoadBuffer", CclLoadBuffer);
 
