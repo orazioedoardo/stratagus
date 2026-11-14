@@ -794,13 +794,29 @@ std::vector<std::basic_string<CHAR>> QuoteArgumentsImpl(const std::vector<std::b
 /**
 **  On the web, the user directory (preferences, saved games) is kept in the browser's storage (IndexedDB) by the
 **  page that runs the game, which loads it before the game starts. Files are written to memory: this copies them to
-**  that storage. Called after the writes that matter; the page also does it every few seconds and when it's closed.
+**  that storage. Called after every write to it (the web build keeps no replay logs, see CommandLog). One copy runs at
+**  a time: asked for while one runs, another follows it, which copies what was written since.
 */
 void SyncUserFiles()
 {
 #ifdef __EMSCRIPTEN__
 	EM_ASM({
-		FS.syncfs(false, (err) => { if (err) console.warn("Saving the game's files failed:", err); });
+		const sync = () => {
+			Module.stratagusSyncing = true;
+			FS.syncfs(false, (err) => {
+				if (err) console.warn("Saving the game's files failed:", err);
+				Module.stratagusSyncing = false;
+				if (Module.stratagusSyncAgain) {
+					Module.stratagusSyncAgain = false;
+					sync();
+				}
+			});
+		};
+		if (Module.stratagusSyncing) {
+			Module.stratagusSyncAgain = true;
+		} else {
+			sync();
+		}
 	});
 #endif
 }
