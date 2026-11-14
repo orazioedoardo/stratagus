@@ -61,8 +61,11 @@ static std::atomic<bool> IsCallbackEnabled = false;
 
 /**
 **  Check if music is finished and play the next song
+**
+**  @param code  Unused: HandleSoundEvent calls every SDL_SOUND_FINISHED handler as void(int), so this one must take
+**               the int too (calling a function through a pointer of another type traps in WebAssembly)
 */
-static void CheckMusicFinished()
+static void CheckMusicFinished(int /* code */)
 {
 	if (SoundEnabled() && IsMusicEnabled()) {
 		lua_getglobal(Lua, "MusicStopped");
