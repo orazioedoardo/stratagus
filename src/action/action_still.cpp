@@ -59,9 +59,10 @@ enum {
 	SUB_STILL_ATTACK
 };
 
+/// Whether the unit's spell vectors are inconsistent: true unless both are empty, or both have the same size
 static bool CheckInvalidAutoCastVectors(const CUnit &unit)
 {
-	return ((unit.AutoCastSpell.empty() && unit.Type->CanCastSpell.empty())
+	return !((unit.AutoCastSpell.empty() && unit.Type->CanCastSpell.empty())
 			|| (!unit.AutoCastSpell.empty() && !unit.Type->CanCastSpell.empty()
 				&& unit.AutoCastSpell.size() == unit.Type->CanCastSpell.size()));
 }
