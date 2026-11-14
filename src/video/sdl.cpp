@@ -58,6 +58,9 @@
 #include <SDL_syswm.h>
 
 #ifdef __EMSCRIPTEN__
+#include "script.h"
+
+#include <algorithm>
 #include <emscripten.h>
 
 // The browser's next display refresh (requestAnimationFrame), waited for by suspending the program (ASYNCIFY), which
@@ -66,6 +69,142 @@
 EM_ASYNC_JS(void, WaitForAnimationFrame, (void), {
 	await new Promise((resolve) => requestAnimationFrame(resolve));
 });
+
+// The canvas's size on the page, in CSS pixels and in device pixels
+EM_JS(void, GetCanvasSize, (int *cssWidth, int *cssHeight, int *pixelWidth, int *pixelHeight), {
+	const rect = Module.canvas.getBoundingClientRect();
+	const ratio = window.devicePixelRatio || 1;
+	HEAP32[cssWidth >> 2] = Math.round(rect.width);
+	HEAP32[cssHeight >> 2] = Math.round(rect.height);
+	HEAP32[pixelWidth >> 2] = Math.round(rect.width * ratio);
+	HEAP32[pixelHeight >> 2] = Math.round(rect.height * ratio);
+});
+
+/*
+**  On the web, the page sizes the canvas (it fills the browser's window), and the game is scaled to it:
+**  - menus, and the screens between games, are made for 640x480: they're shown at that size, as large as fits (with
+**    bars around them when the canvas isn't 4:3)
+**  - while a game is played, the resolution follows the canvas at a fixed scale (WebGameScale), so that a bigger window
+**    shows more of the map rather than bigger pixels: it fills the canvas, with every pixel the same size. A canvas too
+**    small for 640x480 at that scale (what the game's interface needs) is filled at a smaller one.
+*/
+static constexpr double WebGameScale = 1.5;   // CSS pixels for each of the game's pixels while playing (rounded to device pixels)
+static bool WebInGame = false;   // between WebStartGame and WebEndGame
+
+/**
+**  The resolution at start-up, for the menus. The window is the canvas's size in CSS pixels.
+*/
+void SetWebResolution()
+{
+	int cssWidth, cssHeight, pixelWidth, pixelHeight;
+	GetCanvasSize(&cssWidth, &cssHeight, &pixelWidth, &pixelHeight);
+	Video.Width = 640;
+	Video.Height = 480;
+	if (cssWidth && cssHeight) {
+		Video.WindowWidth = cssWidth;
+		Video.WindowHeight = cssHeight;
+	}
+}
+
+// The resolution for what's on screen (a game, or menus), and whether it's scaled by a whole number
+static void WebResolution(int &width, int &height, bool &wholeScale)
+{
+	width = 640;
+	height = 480;
+	wholeScale = false;   // menus: as large as fits
+	int cssWidth, cssHeight, pixelWidth, pixelHeight;
+	GetCanvasSize(&cssWidth, &cssHeight, &pixelWidth, &pixelHeight);
+	if (!WebInGame || !cssWidth || !cssHeight) {
+		return;
+	}
+	// Device pixels for each of the game's: a whole number, so that they're all the same size
+	double scale = std::max(1.0, std::round(WebGameScale * pixelWidth / cssWidth));
+	if (pixelWidth / scale < 640 || pixelHeight / scale < 480) {
+		scale = std::min(pixelWidth / 640.0, pixelHeight / 480.0);
+	} else {
+		wholeScale = true;
+	}
+	width = std::max(640, int(pixelWidth / scale));
+	height = std::max(480, int(pixelHeight / scale));
+}
+
+// Changes the resolution to the one for what's on screen
+static void FollowCanvasSize()
+{
+	int width, height;
+	bool wholeScale;
+	WebResolution(width, height, wholeScale);
+	// A whole scale fills the canvas but for less than one of the game's pixels; another fills it on one side
+	SDL_RenderSetIntegerScale(TheRenderer, wholeScale ? SDL_TRUE : SDL_FALSE);
+	if (width == Video.Width && height == Video.Height) {
+		return;
+	}
+	// The game's own resize (Wargus's SetVideoSize, which lays out its interface again for the new size), else the
+	// engine's
+	const std::string size = std::to_string(width) + ", " + std::to_string(height);
+	CclCommand("if SetVideoSize then SetVideoSize(" + size + ") else Video:ResizeScreen(" + size + ") end");
+	if (WebInGame && GameRunning) {
+		// The game's interface, from the layout the game's scripts just made, as when the game was created (CreateGame).
+		// The map stays where it was (SetViewportMode keeps it).
+		InitUserInterface();
+		UI.Load();
+	}
+}
+
+/**
+**  A game starts (StartMap): the resolution follows the canvas until it ends (WebEndGame).
+*/
+void WebStartGame()
+{
+	WebInGame = true;
+	FollowCanvasSize();
+}
+
+/**
+**  The game ended: back to menus' resolution.
+*/
+void WebEndGame()
+{
+	WebInGame = false;
+	FollowCanvasSize();
+}
+
+// While playing on the map, the pointer is locked to the game: it then moves the game's cursor, which stops at the
+// edges of the screen and scrolls the map there, as with a full-screen game (SDL moves the cursor by the mouse's
+// movement while it's locked, and keeps it in the window). It's unlocked for menus and when the game ends.
+// Locking is asked for when play starts or resumes, which browsers may refuse without a recent click or key press:
+// then, and after Escape (which always unlocks it), it's locked on the next click while playing. That click is
+// handled here, as the browser only allows locking while handling it (the game handles its clicks later).
+EM_JS(void, LockPointerOnClick, (void), {
+	const canvas = Module.canvas;
+	canvas.addEventListener("mousedown", () => {
+		if (Module.stratagusPlaying && document.pointerLockElement !== canvas) canvas.requestPointerLock()?.catch(() => {});
+	});
+});
+
+EM_JS(void, SetPlaying, (int playing), {
+	const canvas = Module.canvas;
+	Module.stratagusPlaying = !!playing;
+	if (playing && document.pointerLockElement !== canvas) {
+		canvas.requestPointerLock()?.catch(() => {});   // without a recent click, the next one does it (see above)
+	} else if (!playing && document.pointerLockElement === canvas) {
+		document.exitPointerLock();
+	}
+});
+
+// Playing on the map: a game is running, and no menu is open over it
+static void UpdatePointerLock()
+{
+	static bool wasPlaying = false;
+	const bool playing = GameRunning && !IsMenuOpen();
+	if (playing != wasPlaying) {
+		wasPlaying = playing;
+		SetPlaying(playing);
+	}
+}
+
+// The canvas changed size: the resolution follows it at the end of the frame (see WaitEventsOneFrame)
+static bool WebResizePending = false;
 #endif
 
 #ifdef USE_BEOS
@@ -444,6 +583,9 @@ void InitVideoSdl()
 		}
 	}
 	SDL_SetRenderDrawColor(TheRenderer, 0, 0, 0, 255);
+#ifdef __EMSCRIPTEN__
+	LockPointerOnClick();
+#endif
 	Video.ResizeScreen(Video.Width, Video.Height);
 
 // #ifdef USE_WIN32
@@ -633,6 +775,9 @@ static void SdlDoEvent(const EventCallback &callbacks, SDL_Event &event)
 			switch (event.window.event) {
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 				SizeChangeCounter++;
+#ifdef __EMSCRIPTEN__
+				WebResizePending = true;
+#endif
 				break;
 
 				case SDL_WINDOWEVENT_ENTER:
@@ -817,6 +962,13 @@ void WaitEventsOneFrame()
 			break;
 		}
 	}
+#ifdef __EMSCRIPTEN__
+	if (WebResizePending) {   // before the menus' logic, which keeps an open one in place (MenuScreen::logic)
+		WebResizePending = false;
+		FollowCanvasSize();
+	}
+	UpdatePointerLock();
+#endif
 	handleInput(nullptr);
 
 	if (SkipGameCycle < 0) {

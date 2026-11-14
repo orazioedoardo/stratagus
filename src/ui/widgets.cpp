@@ -59,6 +59,11 @@ static EventCallback GuichanCallbacks;
 
 static std::stack<MenuScreen *> MenuStack;
 
+bool IsMenuOpen()
+{
+	return !MenuStack.empty();
+}
+
 /*----------------------------------------------------------------------------
 --  Functions
 ----------------------------------------------------------------------------*/
@@ -2605,7 +2610,7 @@ int StatBoxWidget::getPercent() const
 /**
 **  MenuScreen constructor
 */
-MenuScreen::MenuScreen() : Container(), runLoop(true)
+MenuScreen::MenuScreen() : Container(), runLoop(true), screenWidth(Video.Width), screenHeight(Video.Height)
 {
 	setDimension(gcn::Rectangle(0, 0, Video.Width, Video.Height));
 	setOpaque(false);
@@ -2693,6 +2698,10 @@ void MenuScreen::draw(gcn::Graphics *graphics) /* override */
 		gcn::Rectangle r = graphics->getCurrentClipArea();
 		graphics->popClipArea();
 
+		if (auto under = dynamic_cast<MenuScreen *>(oldtop)) {
+			under->keepInPlace();
+		}
+
 		oldtop->_draw(graphics);
 
 		graphics->pushClipArea(r);
@@ -2700,8 +2709,23 @@ void MenuScreen::draw(gcn::Graphics *graphics) /* override */
 	gcn::Container::draw(graphics);
 }
 
+/**
+**  The screen changed size since the menu was placed (the web build's resolution follows the window): move it by half
+**  the change, which keeps it where it was relative to the middle of the screen. Done before it's drawn: in logic, or
+**  for a menu drawn under another, in that one's draw.
+*/
+void MenuScreen::keepInPlace()
+{
+	if (screenWidth != Video.Width || screenHeight != Video.Height) {
+		setPosition(getX() + (Video.Width - screenWidth) / 2, getY() + (Video.Height - screenHeight) / 2);
+		screenWidth = Video.Width;
+		screenHeight = Video.Height;
+	}
+}
+
 void MenuScreen::logic() /* override */
 {
+	keepInPlace();
 	if (NetConnectRunning == 2) {
 		NetworkProcessClientRequest();
 	}

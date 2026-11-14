@@ -764,7 +764,17 @@ try {
 	FogOfWar = std::make_unique<CFogOfWar>();
 	InitOnlineService();
 
+#ifdef __EMSCRIPTEN__
+	// The resolution is set by the engine (SetVideoResolution in the game's scripts then keeps it)
+	if (!Video.Width || !Video.Height) {
+		SetWebResolution();
+	}
+#endif
 	LoadCcl(parameters.luaStartFilename, parameters.luaScriptArguments);
+#ifdef __EMSCRIPTEN__
+	// For the game's scripts: there's no resolution to choose, and changes to it aren't preferences
+	CclCommand("ResolutionSetByEngine = true");
+#endif
 
 	// Setup video display
 	InitVideo();

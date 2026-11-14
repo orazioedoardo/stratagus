@@ -439,6 +439,15 @@ extern const EventCallback *GetCallbacks();
 /// Process all system events. Returns if the time for a frame is over
 extern void WaitEventsOneFrame();
 
+#ifdef __EMSCRIPTEN__
+/// Set the resolution for the menus, and the window from the canvas's size (see sdl.cpp)
+extern void SetWebResolution();
+/// A game starts: the resolution follows the canvas until it ends
+extern void WebStartGame();
+/// The game ended: back to the menus' resolution
+extern void WebEndGame();
+#endif
+
 /// Toggle full screen mode
 extern void ToggleFullScreen();
 

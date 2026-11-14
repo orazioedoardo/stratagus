@@ -120,6 +120,9 @@ void CreateGame(const fs::path &filename, CMap *map);
 
 void StartMap(const std::string &filename, bool clean)
 {
+#ifdef __EMSCRIPTEN__
+	WebStartGame();   // the game's resolution, for the whole of it
+#endif
 	gcn::Widget *oldTop = Gui->getTop();
 	auto container = std::make_unique<gcn::Container>();
 	container->setDimension(gcn::Rectangle(0, 0, Video.Width, Video.Height));
@@ -153,6 +156,9 @@ void StartMap(const std::string &filename, bool clean)
 	SetDefaultTextColors(nc, rc);
 
 	Gui->setTop(oldTop);
+#ifdef __EMSCRIPTEN__
+	WebEndGame();
+#endif
 }
 
 /*----------------------------------------------------------------------------

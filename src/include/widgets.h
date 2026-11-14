@@ -552,6 +552,9 @@ private:
 	unsigned int percent; /// percent value of the widget.
 };
 
+/// Whether a menu is open over the game (the menus started with run(false))
+extern bool IsMenuOpen();
+
 class MenuScreen : public gcn::Container
 {
 public:
@@ -565,6 +568,7 @@ public:
 	void stopAll(int result = 0) { stop(result, true); }
 	void addLogicCallback(LuaActionListener *listener);
 	void setDrawMenusUnder(bool drawUnder) { this->drawUnder = drawUnder; }
+	void keepInPlace();
 	bool getDrawMenusUnder() const { return this->drawUnder; }
 
 private:
@@ -573,6 +577,8 @@ private:
 	gcn::Widget *oldtop = nullptr;
 	LuaActionListener *logiclistener = nullptr;
 	bool drawUnder = false;
+	int screenWidth = 0;    /// the screen's size when the menu was placed (see draw)
+	int screenHeight = 0;
 };
 
 #endif
