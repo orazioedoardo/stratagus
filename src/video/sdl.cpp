@@ -57,6 +57,17 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+// The browser's next display refresh (requestAnimationFrame), waited for by suspending the program (ASYNCIFY), which
+// also lets the browser show the frame and deliver input. Frames timed this way line up with the screen; a timer
+// (SDL_Delay) lets them drift between refreshes, so that some refreshes show no new frame and others two.
+EM_ASYNC_JS(void, WaitForAnimationFrame, (void), {
+	await new Promise((resolve) => requestAnimationFrame(resolve));
+});
+#endif
+
 #ifdef USE_BEOS
 #include <sys/socket.h>
 #endif
@@ -760,8 +771,21 @@ void WaitEventsOneFrame()
 		// Time of frame over? This makes the CPU happy. :(
 		ticks = SDL_GetTicks();
 		if (!interrupts && ticks < NextFrameTicks) {
+#ifdef __EMSCRIPTEN__
+			// Wait for display refreshes until the frame is due (one at 60 Hz, two at 120 Hz). A refresh that comes
+			// slightly early still counts as the frame's: waiting for the next one would skip a whole refresh.
+			const double early = FrameTicks / 4;
+			do {
+				WaitForAnimationFrame();
+				ticks = SDL_GetTicks();
+			} while (ticks + early < NextFrameTicks);
+			if (ticks < NextFrameTicks) {
+				ticks = static_cast<Uint32>(std::ceil(NextFrameTicks));
+			}
+#else
 			SDL_Delay(NextFrameTicks - ticks);
 			ticks = SDL_GetTicks();
+#endif
 		}
 		while (ticks >= (unsigned long)(NextFrameTicks)) {
 			++interrupts;
