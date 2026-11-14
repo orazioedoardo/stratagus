@@ -173,6 +173,7 @@ int SaveGame(const std::string &filename)
 	}
 	SaveTriggers(file); //Triggers are saved in SaveGlobal, so load it after Global
 	file.close();
+	SyncUserFiles();
 	return 0;
 }
 
@@ -192,6 +193,7 @@ void DeleteSaveGame(const std::string &filename)
 	if (!fs::remove(fullpath)) {
 		ErrorPrint("delete failed for '%s'", fullpath.u8string().c_str());
 	}
+	SyncUserFiles();
 }
 
 void StartSavedGame(const std::string &filename)

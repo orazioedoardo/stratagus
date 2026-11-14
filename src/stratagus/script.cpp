@@ -2529,6 +2529,7 @@ void SavePreferences()
 		}
 		fprintf(fd, "%s\n", s.c_str());
 		fclose(fd);
+		SyncUserFiles();
 	}
 }
 
