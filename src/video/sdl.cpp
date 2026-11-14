@@ -144,8 +144,10 @@ static void FollowCanvasSize()
 	const std::string size = std::to_string(width) + ", " + std::to_string(height);
 	CclCommand("if SetVideoSize then SetVideoSize(" + size + ") else Video:ResizeScreen(" + size + ") end");
 	if (WebInGame && GameRunning) {
-		// The game's interface, from the layout the game's scripts just made, as when the game was created (CreateGame).
-		// The map stays where it was (SetViewportMode keeps it).
+		// The game's interface, from the layout the game's scripts just made, as when the game was created (CreateGame):
+		// with the decorations drawn on units (health and mana bars), which the scripts may define again. The map stays
+		// where it was (SetViewportMode keeps it).
+		LoadDecorations();
 		InitUserInterface();
 		UI.Load();
 	}
