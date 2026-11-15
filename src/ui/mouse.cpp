@@ -942,11 +942,13 @@ void HandleMouseExit()
 	// Prevent scrolling while out of focus (on other applications) */
 	KeyScrollState = MouseScrollState = ScrollNone;
 
+#ifndef __EMSCRIPTEN__   // on the web, the cursor stays where it left the page's canvas, next to the browser's pointer
 	// Show hour-glass (to denote to the user, the game is waiting)
 	// FIXME: couldn't define a hour-glass that easily, so used pointer
 	CursorScreenPos.x = Video.Width / 2;
 	CursorScreenPos.y = Video.Height / 2;
 	GameCursor = UI.Point.Cursor;
+#endif
 }
 
 /**
