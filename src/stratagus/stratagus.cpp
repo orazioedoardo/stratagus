@@ -774,6 +774,8 @@ try {
 #ifdef __EMSCRIPTEN__
 	// For the game's scripts: there's no resolution to choose, and changes to it aren't preferences
 	CclCommand("ResolutionSetByEngine = true");
+	// Nor network games: a browser can't open the UDP connections they use
+	CclCommand("NetworkUnavailable = true");
 #endif
 
 	// Setup video display
