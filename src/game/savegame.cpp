@@ -200,6 +200,9 @@ void StartSavedGame(const std::string &filename)
 {
 	SaveGameLoading = true;
 	CleanPlayers();
+#ifdef __EMSCRIPTEN__
+	WebStartGame();   // the game's resolution before loading, which lays out its interface (StartMap keeps it)
+#endif
 	LoadGame(ExpandPath(filename));
 
 	StartMap(filename, false);
