@@ -156,6 +156,8 @@ extern std::vector<FileList> ReadDataDirectory(const fs::path& directory);
 extern std::vector<std::string> QuoteArguments(const std::vector<std::string>& args);
 /// Make what was just written in the user directory persistent (only does something on the web: see iolib.cpp)
 extern void SyncUserFiles();
+/// Wait for SyncUserFiles to have made everything persistent (before exiting)
+extern void FinishSyncingUserFiles();
 extern std::vector<std::wstring> QuoteArguments(const std::vector<std::wstring>& args);
 
 //@}

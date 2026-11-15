@@ -423,6 +423,7 @@ void Exit(int err)
 	delete UnitManager;
 
 	fprintf(stdout, "%s", _("Thanks for playing Stratagus.\n"));
+	FinishSyncingUserFiles();
 	exit(err);
 }
 

@@ -822,6 +822,26 @@ void SyncUserFiles()
 #endif
 }
 
+#ifdef __EMSCRIPTEN__
+EM_ASYNC_JS(void, WaitForUserFiles, (void), {
+	while (Module.stratagusSyncing || Module.stratagusSyncAgain) {
+		await new Promise((resolve) => setTimeout(resolve, 10));
+	}
+});
+#endif
+
+/**
+**  Waits for the copies to the browser's storage to be done, with one more for anything written since: the program
+**  is about to exit, which closes the storage (a copy still running then fails, losing what it was copying).
+*/
+void FinishSyncingUserFiles()
+{
+#ifdef __EMSCRIPTEN__
+	SyncUserFiles();
+	WaitForUserFiles();
+#endif
+}
+
 std::vector<std::string> QuoteArguments(const std::vector<std::string>& args)
 {
 	return QuoteArgumentsImpl(args, " \t\n\v\"", '"', '\\');
