@@ -177,10 +177,17 @@ static void LoadStratagusMap(const fs::path &smpdir, const fs::path &mapname)
 	// Try the same directory as the smp file first
 	// Not found, try StratagusLibPath and the smp's dir
 	// Not found again, try StratagusLibPath
+	// Not found, try the user's files (maps saved from the editor on the web, see EditorSaveMap)
 	// Not found, try mapname by itself as a last resort
+	fs::path saved = Parameters::Instance.GetUserDirectory();
+	if (!GameName.empty()) {
+		saved /= GameName;
+	}
 	for (auto candidate : {smpdir / mapname,
 	                       fs::path(StratagusLibPath) / smpdir / mapname,
 	                       fs::path(StratagusLibPath) / mapname,
+	                       saved / smpdir / mapname,
+	                       saved / mapname,
 	                       fs::path(mapname)}) {
 		const std::string_view extra_extensions[] = {
 			"",

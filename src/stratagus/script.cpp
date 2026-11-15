@@ -1913,9 +1913,26 @@ static int CclFilteredListDirectory(lua_State *l, int type, int mask)
 	} else {
 		dir = fs::path(StratagusLibPath) / userdir;
 	}
+	std::vector<FileList> files = ReadDataDirectory(dir);
+#ifdef __EMSCRIPTEN__
+	// On the web, what the user saved in the data's folders (maps from the editor) is with the user's files instead:
+	// listed with the data's (see EditorSaveMap)
+	if (pathtype == 0) {
+		fs::path saved = Parameters::Instance.GetUserDirectory();
+		if (!GameName.empty()) {
+			saved /= GameName;
+		}
+		for (auto &flp : ReadDataDirectory(saved / userdir)) {
+			if (ranges::none_of(files, [&](const FileList &f) { return f.name == flp.name; })) {
+				files.push_back(std::move(flp));
+			}
+		}
+		ranges::sort(files);
+	}
+#endif
 	lua_newtable(l);
 	int j = 0;
-	for (const auto& flp : ReadDataDirectory(dir)) {
+	for (const auto& flp : files) {
 		if ((flp.type & mask) == type) {
 			lua_pushnumber(l, j + 1);
 			lua_pushstring(l, flp.name.string().c_str());

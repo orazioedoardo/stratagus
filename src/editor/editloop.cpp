@@ -1953,25 +1953,47 @@ void CEditor::Init()
 **         At least two players, one human slot, every player have a start point
 **         ...
 */
+/**
+**  Where a map is saved: in the game's data. On the web, the data isn't kept: maps are saved with the user's files
+**  instead (preferences, saved games), which the browser keeps, and which map lists show with the data's (see
+**  CclFilteredListDirectory).
+*/
+static fs::path EditorMapPath(std::string_view file)
+{
+#ifdef __EMSCRIPTEN__
+	fs::path path = Parameters::Instance.GetUserDirectory();
+	if (!GameName.empty()) {
+		path /= GameName;
+	}
+	path /= file;
+	fs::create_directories(path.parent_path());
+	return path;
+#else
+	return fs::path(StratagusLibPath) / file;
+#endif
+}
+
 int EditorSaveMap(const std::string &file)
 {
-	const fs::path fullName = fs::path(StratagusLibPath) / file;
+	const fs::path fullName = EditorMapPath(file);
 
 	if (!SaveStratagusMap(fullName, Map, Editor.TerrainEditable)) {
 		ErrorPrint("Cannot save map\n");
 		return -1;
 	}
+	SyncUserFiles();
 	return 0;
 }
 
 int EditorSaveMapWithResize(std::string_view file, Vec2i newSize, Vec2i offset)
 {
-	const fs::path fullName = fs::path(StratagusLibPath) / file;
+	const fs::path fullName = EditorMapPath(file);
 
 	if (!SaveStratagusMap(fullName, Map, Editor.TerrainEditable, newSize, offset)) {
 		ErrorPrint("Cannot save map\n");
 		return -1;
 	}
+	SyncUserFiles();
 	return 0;
 }
 
