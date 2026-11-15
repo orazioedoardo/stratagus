@@ -332,10 +332,6 @@ void CommandLog(const char *action,
                 const char *value,
                 int num)
 {
-#ifdef __EMSCRIPTEN__
-	// The web build keeps no replay logs: a file for each game would fill the browser's storage
-	return;
-#endif
 	if (CommandLogDisabled) { // No log wanted
 		return;
 	}
@@ -636,6 +632,7 @@ void EndReplayLog()
 	if (LogFile) {
 		LogFile->close();
 		LogFile = nullptr;
+		SyncUserFiles();   // the game's log, kept on the web (see SyncUserFiles)
 	}
 	CurrentReplay = nullptr;
 
@@ -873,7 +870,7 @@ int SaveReplay(const std::string &filename)
 		ErrorPrint("Can't save to '%s'\n", destination.u8string().c_str());
 		return -1;
 	}
-
+	SyncUserFiles();
 	return 0;
 }
 

@@ -794,8 +794,9 @@ std::vector<std::basic_string<CHAR>> QuoteArgumentsImpl(const std::vector<std::b
 /**
 **  On the web, the user directory (preferences, saved games) is kept in the browser's storage (IndexedDB) by the
 **  page that runs the game, which loads it before the game starts. Files are written to memory: this copies them to
-**  that storage. Called after every write to it (the web build keeps no replay logs, see CommandLog). One copy runs at
-**  a time: asked for while one runs, another follows it, which copies what was written since.
+**  that storage. Called after the writes to it: saved games, preferences, and replay logs when they're complete (at the
+**  end of a game). One copy runs at a time: asked for while one runs, another follows it, which copies what was
+**  written since.
 */
 void SyncUserFiles()
 {
