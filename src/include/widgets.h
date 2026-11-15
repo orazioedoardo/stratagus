@@ -552,9 +552,6 @@ private:
 	unsigned int percent; /// percent value of the widget.
 };
 
-/// Whether a menu is open over the game (the menus started with run(false))
-extern bool IsMenuOpen();
-
 class MenuScreen : public gcn::Container
 {
 public:

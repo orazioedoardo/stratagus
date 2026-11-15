@@ -171,11 +171,12 @@ void WebEndGame()
 	FollowCanvasSize();
 }
 
-// While playing on the map, the pointer is locked to the game: it then moves the game's cursor, which stops at the
+// While a game is played, the pointer is locked to the game: it then moves the game's cursor, which stops at the
 // edges of the screen and scrolls the map there, as with a full-screen game (SDL moves the cursor by the mouse's
-// movement while it's locked, and keeps it in the window). It's unlocked for menus and when the game ends.
-// Locking is asked for when play starts or resumes, which browsers may refuse without a recent click or key press:
-// then, and after Escape (which always unlocks it), it's locked on the next click while playing. That click is
+// movement while it's locked, and keeps it in the window). It stays locked in the menus over the game, as unlocking
+// shows the browser's pointer where it was when locked (a page can't move it), and the game's cursor jumps there:
+// it's unlocked when the game ends. Locking is asked for when the game starts, which browsers may refuse without a
+// recent click or key press: then, and after Escape (which always unlocks it), it's locked on the next click in it. That click is
 // handled here, as the browser only allows locking while handling it (the game handles its clicks later).
 EM_JS(void, LockPointerOnClick, (void), {
 	const canvas = Module.canvas;
@@ -194,11 +195,10 @@ EM_JS(void, SetPlaying, (int playing), {
 	}
 });
 
-// Playing on the map: a game is running, and no menu is open over it
 static void UpdatePointerLock()
 {
 	static bool wasPlaying = false;
-	const bool playing = GameRunning && !IsMenuOpen();
+	const bool playing = GameRunning;
 	if (playing != wasPlaying) {
 		wasPlaying = playing;
 		SetPlaying(playing);

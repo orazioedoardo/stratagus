@@ -59,11 +59,6 @@ static EventCallback GuichanCallbacks;
 
 static std::stack<MenuScreen *> MenuStack;
 
-bool IsMenuOpen()
-{
-	return !MenuStack.empty();
-}
-
 /*----------------------------------------------------------------------------
 --  Functions
 ----------------------------------------------------------------------------*/
