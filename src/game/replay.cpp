@@ -158,6 +158,8 @@ static std::unique_ptr<FullReplay> StartReplay()
 	replay->Comment2 = "Visit " HOMEPAGE " for more information";
 
 	replay->ReplaySettings = GameSettings;
+	// The fog of war the game is played with: the game's setting for it (SetFogOfWar) is the map's, not GameSettings'
+	replay->ReplaySettings.NoFogOfWar = Map.NoFogOfWar;
 
 	for (int i = 0; i < PlayerMax; ++i) {
 		replay->PlayerNames[i] = Players[i].Name;
