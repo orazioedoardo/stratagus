@@ -64,7 +64,10 @@ macro(web_targets)
 		-lidbfs.js
 	)
 	if(STRATAGUS_WEB_DATA)
-		target_link_options(stratagus PRIVATE "--preload-file=${STRATAGUS_WEB_DATA}@/")
+		target_link_options(stratagus PRIVATE "--preload-file=${STRATAGUS_WEB_DATA}@/"
+			# without the .stamp (see below), which is only for the build: its content changes with the data's
+			# preparation, not with the data, and would change the package
+			"--exclude-file=${STRATAGUS_WEB_DATA}/.stamp")
 		# Relink when the data changes. Whatever prepares the data updates a file named .stamp in it when it changes:
 		# depending on every file instead isn't possible, as Make can't take names with spaces or parentheses.
 		if(EXISTS "${STRATAGUS_WEB_DATA}/.stamp")
