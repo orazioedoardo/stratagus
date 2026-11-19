@@ -290,6 +290,19 @@ static int CclSavePreferences(lua_State *l)
 }
 
 /**
+**  The time since the program started, in milliseconds: for scripts that animate at their own pace (menus run once
+**  per display refresh, whatever the game speed).
+**
+**  @param l  Lua state.
+*/
+static int CclGetTicks(lua_State *l)
+{
+	LuaCheckArgs(l, 0);
+	lua_pushnumber(l, SDL_GetTicks());
+	return 1;
+}
+
+/**
 **  The user's preferred languages (on the web, the browser's), most preferred first, as language codes: "en", "it"...
 **  Empty when they aren't known.
 **
@@ -2732,6 +2745,7 @@ void ScriptRegister()
 
 	lua_register(Lua, "SavePreferences", CclSavePreferences);
 	lua_register(Lua, "GetPreferredLanguages", CclGetPreferredLanguages);
+	lua_register(Lua, "GetTicks", CclGetTicks);
 	lua_register(Lua, "Load", CclLoad);
 	lua_register(Lua, "LoadBuffer", CclLoadBuffer);
 
