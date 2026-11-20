@@ -24,6 +24,17 @@ macro(web_dependencies)
 	set(WITH_THEORA OFF CACHE BOOL "Compile Stratagus with Theroa video library")
 	set(WITH_STACKTRACE OFF CACHE BOOL "Compile Stratagus with StackTrace library")
 
+	# The same build from the same source, with nothing of this machine in it: the (unused) window icons' folder, which
+	# is otherwise an absolute path in Emscripten's sysroot, and the version's "last modified" date and time
+	# (version-generated.h), from the commit rather than from when the build folder was set up (SOURCE_DATE_EPOCH, which
+	# CMake's string(TIMESTAMP) follows)
+	set(PIXMAPSDIR "/usr/share/pixmaps" CACHE PATH "Sets the pixmaps directory to a non-default location." FORCE)
+	execute_process(COMMAND git log -1 --format=%ct WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+		OUTPUT_VARIABLE commit_time OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE git_result ERROR_QUIET)
+	if(git_result EQUAL 0 AND commit_time)
+		set(ENV{SOURCE_DATE_EPOCH} "${commit_time}")
+	endif()
+
 	add_compile_options(-fexceptions ${STRATAGUS_WEB_PORTS})
 	add_link_options(-fexceptions ${STRATAGUS_WEB_PORTS} "-sSDL2_IMAGE_FORMATS=[\"png\"]")
 	# Found: the ports put their headers where emcc finds them, and the flags above link them
